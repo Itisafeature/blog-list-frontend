@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import Blog from './components/Blog';
 import Notification from './components/Notification';
+import Toggleable from './components/Toggleable';
 import LoginForm from './components/LoginForm';
 import BlogForm from './components/BlogForm';
 import blogService from './services/blogs';
@@ -12,9 +13,6 @@ const App = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [user, setUser] = useState(null);
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [url, setUrl] = useState('');
   const [isErr, setIsError] = useState(null);
   const [notification, setNotification] = useState(null);
 
@@ -58,22 +56,20 @@ const App = () => {
     setPassword('');
   };
 
-  const handleNewBlog = async event => {
-    event.preventDefault();
-    const body = { title, author, url };
+  const handleNewBlog = async body => {
     try {
+      blogFormRef.current.toggleVisibility();
       const blog = await blogService.createBlog(body);
       setBlogs(blogs.concat(blog));
       setIsError(false);
       setNotification('Created Blog!');
       setTimeout(() => setNotification(null), 5000);
-      setTitle('');
-      setAuthor('');
-      setUrl('');
     } catch (err) {
       console.log(err);
     }
   };
+
+  const blogFormRef = React.createRef();
 
   if (user === null) {
     return (
@@ -97,18 +93,14 @@ const App = () => {
       {user && <button onClick={handleLogout}>Logout</button>}
       {notification && <Notification isErr={isErr} text={notification} />}
       <h4>Create New Blog</h4>
-      <BlogForm
-        handleNewBlog={handleNewBlog}
-        title={title}
-        setTitle={setTitle}
-        author={author}
-        setAuthor={setAuthor}
-        url={url}
-        setUrl={setUrl}
-      />
-      {blogs.map(blog => (
-        <Blog key={blog.id} blog={blog} />
-      ))}
+      <Toggleable buttonLabel="create blog" ref={blogFormRef}>
+        <BlogForm handleNewBlog={handleNewBlog} />
+      </Toggleable>
+      {blogs
+        .sort((a, b) => b.likes - a.likes)
+        .map(blog => (
+          <Blog key={blog.id} blog={blog} blogs={blogs} setBlogs={setBlogs} />
+        ))}
     </div>
   );
 };
